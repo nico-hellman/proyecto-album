@@ -1,0 +1,75 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                  String            @id @default(uuid())
+  email               String            @unique
+  name                String
+  role                String            @default("USER")
+  passwordHash        String
+  createdAt           DateTime          @default(now())
+  points              Int               @default(0)
+  stickers            UserSticker[]
+  tradeOffers         TradeOffer[]      @relation("SenderOffers")
+  receivedTradeOffers TradeOffer[]      @relation("ReceiverOffers")
+  achievements        UserAchievement[]
+}
+
+model Sticker {
+  id          String        @id @default(uuid())
+  number      Int
+  slug        String        @unique
+  name        String
+  category    String
+  description String
+  rarity      String
+  emoji       String
+  imageUrl    String?
+  users       UserSticker[]
+  offeredIn   TradeOffer[]  @relation("OfferedSticker")
+  requestedIn TradeOffer[]  @relation("RequestedSticker")
+}
+
+model UserSticker {
+  id        String   @id @default(uuid())
+  userId    String
+  stickerId String
+  quantity  Int      @default(1)
+  isNew     Boolean  @default(true)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sticker   Sticker  @relation(fields: [stickerId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, stickerId])
+}
+
+model TradeOffer {
+  id                 String   @id @default(uuid())
+  senderId           String
+  receiverId         String?
+  offeredStickerId   String
+  requestedStickerId String
+  status             String   @default("PENDING") // PENDING, ACCEPTED, CANCELLED
+  createdAt          DateTime @default(now())
+
+  sender             User     @relation("SenderOffers", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver           User?    @relation("ReceiverOffers", fields: [receiverId], references: [id], onDelete: Cascade)
+  offeredSticker     Sticker  @relation("OfferedSticker", fields: [offeredStickerId], references: [id], onDelete: Cascade)
+  requestedSticker   Sticker  @relation("RequestedSticker", fields: [requestedStickerId], references: [id], onDelete: Cascade)
+}
+
+model UserAchievement {
+  id            String   @id @default(uuid())
+  userId        String
+  achievementId String
+  unlockedAt    DateTime @default(now())
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, achievementId])
+}

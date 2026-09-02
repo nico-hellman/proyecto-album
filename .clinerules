@@ -1,0 +1,56 @@
+# ============================================================
+# CLINERULES — Stack: Next.js 14/15 + TypeScript + Python
+# Copiar este archivo a la raíz de cada proyecto
+# ============================================================
+
+# ── TYPESCRIPT ──────────────────────────────────────────────
+- Usa tipado estricto. Habilita "strict": true en tsconfig.json.
+- Prefiere `interface` sobre `type` para definiciones de datos y props de componentes.
+- Usa `type` solo para uniones, intersecciones y tipos de utilidad.
+- Nunca uses `any`. Si el tipo es desconocido, usa `unknown` y nárralos con type guards.
+- Exporta los tipos/interfaces desde un archivo central `types/index.ts` cuando sean compartidos entre módulos.
+- Usa `satisfies` en lugar de cast cuando necesites verificar conformidad de tipos.
+
+# ── NEXT.JS 14/15 — APP ROUTER ──────────────────────────────
+- Todos los componentes son Server Components por defecto. Agrega "use client" solo cuando sea imprescindible (estado, eventos del navegador, hooks de React).
+- Las mutaciones de datos van en Server Actions (`"use server"`), nunca en API routes si se pueden evitar.
+- Usa `fetch` con `{ cache: 'force-cache' | 'no-store' }` explícito en cada llamada dentro de Server Components.
+- Para datos dinámicos usa `unstable_cache` de `next/cache` en lugar de desactivar el cache globalmente.
+- Organiza rutas siguiendo la convención: `app/(grupo)/ruta/page.tsx`.
+- Los layouts comparten estado de servidor — no pongas lógica de cliente en `layout.tsx`.
+- Usa `loading.tsx` y `error.tsx` en cada segmento de ruta que lo necesite.
+- Para metadatos: exporta el objeto `metadata` o la función `generateMetadata` desde `page.tsx`, nunca desde el layout global.
+
+# ── PYTHON ──────────────────────────────────────────────────
+- Sigue PEP8. Usa `black` para formateo y `ruff` para linting.
+- Usa type hints en todas las funciones. Prefiere `from __future__ import annotations` para compatibilidad.
+- Para APIs con FastAPI: define modelos Pydantic que sean el espejo exacto de las interfaces TypeScript del frontend.
+- Si una función puede fallar, retorna `Result[T, Error]` o usa excepciones tipadas, nunca retornes `None` silenciosamente.
+- Prefiere funciones puras sobre clases cuando sea posible.
+
+# ── ALINEACIÓN TS ↔ PYTHON ──────────────────────────────────
+- Cuando generes un endpoint FastAPI, genera también la interface TypeScript correspondiente en `types/api.ts`.
+- Los nombres de campos usan camelCase en TypeScript y snake_case en Python — usa `alias_generator = to_camel` en Pydantic.
+- Las fechas siempre en ISO 8601 (`string` en TS, `datetime` en Python).
+- Errores de API: usa el esquema `{ error: string, code: string, details?: unknown }` en ambos lados.
+
+# ── ESTILOS ──────────────────────────────────────────────────
+- Si el proyecto usa Tailwind: clases utilitarias directamente, sin `@apply` salvo para componentes base repetidos.
+- Si usa CSS Modules: un archivo `.module.css` por componente, sin estilos globales salvo variables y reset.
+- No mezcles Tailwind con CSS Modules en el mismo componente.
+
+# ── DOCKER ───────────────────────────────────────────────────
+- Siempre Dockerfile multi-stage: `deps` → `builder` → `runner`.
+- En la etapa `runner`, usa `node:alpine` o `python:slim` y copia solo los artefactos necesarios.
+- Las variables de entorno secretas nunca en el Dockerfile — usa ARG solo para build-time públicos.
+- El `.dockerignore` debe incluir: `node_modules`, `.next`, `__pycache__`, `.env*`, `.git`.
+
+# ── CALIDAD ──────────────────────────────────────────────────
+- No generes comentarios que expliquen QUÉ hace el código (el nombre ya lo dice). Solo comenta el PORQUÉ si hay una restricción no obvia.
+- No agregues manejo de errores para casos que no pueden ocurrir.
+- No introduzcas abstracciones hasta que el patrón aparezca 3 veces.
+- Antes de crear un nuevo archivo, verifica si la lógica puede vivir en uno existente.
+
+# ── MODO AGENTE / AUTONOMÍA (CLINE & ROO-CODE) ──────────────
+- Antes de proponer o ejecutar cualquier acción en el terminal o código, debes mapear el entorno listando la raíz y leyendo archivos clave (`package.json`, `.env`, etc.) para deducir de forma autónoma la arquitectura tecnológica. Nunca asumas la pila de desarrollo a ciegas.
+- Si deseas realizar cambios de archivos o ejecutar comandos de terminal, debes invocar formalmente la herramienta correspondiente provista por el sistema (como `write_to_file`, `replace_file_content` o `run_command`). NUNCA devuelvas bloques de texto JSON o XML simulando una llamada a herramienta dentro de las burbujas de chat de texto normales, ya que esto bloquea la ejecución autónoma y requiere clics manuales del usuario.
